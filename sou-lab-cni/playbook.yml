@@ -1,0 +1,9 @@
+- name: Esecuzione roles
+  hosts: all
+  become: yes
+#  vars: 
+#    ./Dockerfile2_1
+#    ./Dockerfile2_2
+    
+  roles: 
+    - role: sou_podman
