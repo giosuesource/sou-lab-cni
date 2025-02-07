@@ -1,0 +1,197 @@
+- name: install Podman
+  package:
+    name: podman
+    state: present
+
+- name: start podman
+  service: 
+    name: podman
+    state: started
+    enabled: yes
+
+- name: install python3
+  package:
+    name: python3
+    state: present
+    
+- name: install python3-pip
+  package:
+    name: python3-pip
+    state: present
+  
+- name: Install cryptography using pip
+  pip:
+    name: cryptography
+    state: present
+
+- name: Creates directory
+  file: 
+    path: "/etc/certificati/"
+    state: directory
+    owner: "root"
+    group: "root"
+    mode: '0755'
+  when: inventory_hostname == "soufe1"
+  
+- name: Generate the private key for the certificate
+  openssl_privatekey:
+    path: /etc/certificati/ansible.com.key
+    size: 2048
+    type: RSA 
+  become: true
+  when: inventory_hostname == "soufe1"
+
+- name: Generate a Self Signed OpenSSL certificate
+  openssl_certificate:
+    path: /etc/certificati/ansible.com.crt
+    privatekey_path: /etc/certificati/ansible.com.key
+    provider: selfsigned
+  when: inventory_hostname == "soufe1"
+  
+- name: Creates directory
+  file: 
+    path: "/etc/certificati/pem/"
+    state: directory
+    owner: "root"
+    group: "root"
+    mode: '0755'
+  when: inventory_hostname == "soufe1"
+  
+- name: Assemble from fragments from a directory
+  ansible.builtin.assemble:
+    src: /etc/certificati/
+    dest: /etc/certificati/pem/ansible.pem
+  when: inventory_hostname == "soufe1"
+  
+- name: Pull an image Haproxy
+  containers.podman.podman_image:
+    name: docker.io/library/haproxy:latest
+  when: inventory_hostname == "soufe1"
+
+- name: Creates directory
+  file: 
+    path: "/usr/local/etc/haproxy/certs"
+    state: directory
+    owner: "root"
+    group: "root"
+    mode: '0755'
+  when: inventory_hostname == "soufe1"
+  
+- name: Render haproxy.cfg from template
+  template:
+    src: soupodman/templates/haproxy.cfg.j2
+    dest: /usr/local/etc/haproxy/haproxy.cfg
+  when: inventory_hostname == "soufe1"
+ 
+- name: Run HAProxy container
+  containers.podman.podman_container:
+    name: haproxy
+    image: docker.io/library/haproxy:latest
+    state: started
+    user: root
+    expose:
+      - 80
+      - 443
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - "/etc/certificati/pem/ansible.pem:/usr/local/etc/haproxy/certs/ansible.pem"
+      - "/usr/local/etc/haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg"
+      - "/usr/local/etc/haproxy/haproxy.cfg:/etc/haproxy/haproxy.cfg"
+  when: inventory_hostname == "soufe1"
+
+  
+- name: Pull an image
+  containers.podman.podman_image:
+    name: docker.io/prom/prometheus:latest
+  when: inventory_hostname == "soufe2"
+  
+- name: Creating prometheus user group
+  group: name="prometheus"
+  become: true
+  when: inventory_hostname == "soufe2"
+
+- name: Creating prometheus user
+  user:
+    name: "prometheus"
+    group: "prometheus"
+    system: yes
+    shell: "/sbin/nologin"
+    createhome: "no"
+    state: present
+  when: inventory_hostname == "soufe2"
+ 
+- name: Creates directory
+  file: 
+    path: "/etc/prometheus/"
+    state: directory
+    owner: "prometheus"
+    group: "prometheus"
+    mode: '0755'
+  when: inventory_hostname == "soufe2"
+   
+- name: config file
+  template:
+    src: prometheus.conf.j2
+    dest: /etc/prometheus/prometheus.conf
+    mode: '0755'
+  when: inventory_hostname == "soufe2"
+  
+- name: Create Prometheus Container
+  containers.podman.podman_container:
+    name: prometheus
+    image: docker.io/prom/prometheus:latest
+    volume:
+      - prometheus-data:/prometheus 
+    expose:
+      - 9090
+    ports:
+      - "9090:9090"
+  when: inventory_hostname == "soufe2"
+  
+- name: Pull image Grafana
+  containers.podman.podman_image:
+    name: docker.io/library/haproxy:latest
+  when: inventory_hostname == "soufe2"
+  
+- name: Creating Grafana user group
+  group: name="grafana"
+  become: true
+  when: inventory_hostname == "soufe2"
+
+- name: Creating Grafana user
+  user:
+    name: "grafana"
+    group: "grafana"
+    system: yes
+    shell: "/sbin/nologin"
+    createhome: "no"
+    state: present
+  when: inventory_hostname == "soufe2"
+  
+- name: Creates directory
+  file: 
+    path: "/etc/grafana/"
+    state: directory
+    owner: "grafana"
+    group: "grafana"
+    mode: '0755'
+  when: inventory_hostname == "soufe2"
+  
+- name: "Grafana configuration file copy"
+  template:
+    src: grafana.ini.j2
+    dest: /etc/grafana/grafana.ini
+    mode: '0755'
+  when: inventory_hostname == "soufe2" 
+  
+- name: Create Grafana Container
+  containers.podman.podman_container:
+    name: grafana
+    image: docker.io/grafana/grafana:latest
+    expose:
+      - 3000
+    ports:
+      - "3000:3000"
+  when: inventory_hostname == "soufe2"

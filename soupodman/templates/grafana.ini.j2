@@ -1,0 +1,33 @@
+[server]
+protocol = https
+http_port = 3000
+cert_file = /etc/grafana/cert.pem      # Percorso del certificato
+cert_key = /etc/grafana/cert.key       # Percorso della chiave privata
+root_url = %(protocol)s://%(domain)s:%(http_port)s/
+
+[auth]
+# Impostazioni di autenticazione di base
+disable_login_form = false
+disable_signout_menu = false
+
+[security]
+# Configurazioni di sicurezza per Grafana
+admin_password = admin_password  # Cambia la password di amministratore per motivi di sicurezza
+secret_key = a_random_secret_key # Usa una chiave segreta per firmare i cookie di sessione
+
+[users]
+# Configurazione degli utenti
+allow_sign_up = false
+auto_assign_org = true
+auto_assign_org_role = Viewer
+
+[databases]
+# Configurazione dei database
+default = sqlite3
+[databases.sqlite3]
+path = /var/lib/grafana/grafana.db
+
+[metrics]
+# Configurazione delle metriche in Grafana
+enabled = true
+
