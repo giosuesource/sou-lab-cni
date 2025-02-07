@@ -1,5 +1,3 @@
-
-# Step. 8
 ### Descrizione esercizio:
 
 Lo scopo di questo esercizio è quello di utilizzare Vagrant multinodo per creare 2 macchine virtuali (soufe1 e soufe2) con comunicazione su interfacce network locali.
