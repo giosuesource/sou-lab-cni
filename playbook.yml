@@ -2,9 +2,6 @@
   hosts: all
   become: yes
   user: root
-#  vars: 
-#    ./Dockerfile2_1
-#    ./Dockerfile2_2
     
   roles: 
     - role: soupodman
