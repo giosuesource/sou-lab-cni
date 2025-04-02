@@ -1,0 +1,7 @@
+- name: Esecuzione roles
+  hosts: all
+  become: yes
+  user: root
+    
+  roles: 
+    - role: soupodman

@@ -1,0 +1,18 @@
+global:
+  scrape_interval: 15s  # Intervallo di raccolta dei dati
+
+scrape_configs:
+  - job_name: 'haproxy'
+    static_configs:
+      - targets: ['192.168.56.3:8404']  # Porta dove HAProxy espone le metriche
+
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['192.168.56.3:9090']  # Porta di Prometheus per le sue metriche
+
+  - job_name: 'grafana'
+    static_configs:
+      - targets: ['192.168.56.3:3000']  # Porta di Grafana per le sue metriche
+    metrics_path: '/metrics'  # Grafana espone le metriche su questa path
+    scheme: 'http'  # Usa http se Grafana non è configurato con HTTPS per le metriche
+
